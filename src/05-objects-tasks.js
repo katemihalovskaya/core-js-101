@@ -6,13 +6,6 @@
  *                                                                                                *
  ************************************************************************************************ */
 
-const { AttributeSelector } = require('./AttributeSelector');
-const { ClassSelector } = require('./ClassSelector');
-const { ElementSelector } = require('./ElementSelector');
-const { IdSelector } = require('./IdSelector');
-const { PseudoClassSelector } = require('./PseudoClassSelector');
-const { PseudoElementSelector } = require('./PseudoElementSelector');
-
 /**
  * Css selectors builder
  *
@@ -67,27 +60,138 @@ const { PseudoElementSelector } = require('./PseudoElementSelector');
  *  For more examples see unit tests.
  */
 
+class CssSelector {
+  constructor() {
+    this.selectorParts = [];
+    this.selectorOrder = [
+      'element',
+      'id',
+      'class',
+      'attribute',
+      'pseudoClass',
+      'pseudoElement',
+    ];
+    this.selectorCounts = {
+      element: 0,
+      id: 0,
+      pseudoElement: 0,
+    };
+    this.usedParts = [];
+  }
+
+  element(value) {
+    this.validatePartOccurrence('element');
+    this.checkOrder('element');
+    this.selectorCounts.element += 1;
+    this.selectorParts.push(value);
+    return this;
+  }
+
+  id(value) {
+    this.validatePartOccurrence('id');
+    this.checkOrder('id');
+    this.selectorCounts.id += 1;
+    this.selectorParts.push(`#${value}`);
+    return this;
+  }
+
+  class(value) {
+    this.checkOrder('class');
+    this.selectorParts.push(`.${value}`);
+    return this;
+  }
+
+  attr(value) {
+    this.checkOrder('attribute');
+    this.selectorParts.push(`[${value}]`);
+    return this;
+  }
+
+  pseudoClass(value) {
+    this.checkOrder('pseudoClass');
+    this.selectorParts.push(`:${value}`);
+    return this;
+  }
+
+  pseudoElement(value) {
+    this.validatePartOccurrence('pseudoElement');
+    this.checkOrder('pseudoElement');
+    this.selectorCounts.pseudoElement += 1;
+    this.selectorParts.push(`::${value}`);
+    return this;
+  }
+
+  combine(selector1, combinator, selector2) {
+    this.selectorParts.push(`${selector1.stringify()} ${combinator} ${selector2.stringify()}`);
+    return this;
+  }
+
+  stringify() {
+    return this.selectorParts.join('');
+  }
+
+  checkOrder(part) {
+    const lastPartIndex = this.usedParts.length - 1;
+    const lastPart = this.usedParts[lastPartIndex];
+
+    if (
+      lastPart
+      && this.selectorOrder.indexOf(part) < this.selectorOrder.indexOf(lastPart)
+    ) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, '
+        + 'id, class, attribute, pseudo-class, pseudo-element',
+      );
+    }
+
+    this.usedParts.push(part);
+  }
+
+  validatePartOccurrence(part) {
+    if (
+      part === 'element'
+      && this.usedParts.includes('element')
+    ) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+
+    if (
+      part === 'id'
+      && this.usedParts.includes('id')
+    ) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+
+    if (
+      part === 'pseudoElement'
+      && this.usedParts.includes('pseudoElement')
+    ) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+  }
+}
+
 const cssSelectorBuilder = {
   element(value) {
-    return new ElementSelector(value);
+    return new CssSelector().element(value);
   },
   id(value) {
-    return new IdSelector(`#${value}`);
+    return new CssSelector().id(value);
   },
   class(value) {
-    return new ClassSelector(`.${value}`);
+    return new CssSelector().class(value);
   },
   attr(value) {
-    return new AttributeSelector(`[${value}]`);
+    return new CssSelector().attr(value);
   },
   pseudoClass(value) {
-    return new PseudoClassSelector(`:${value}`);
+    return new CssSelector().pseudoClass(value);
   },
   pseudoElement(value) {
-    return new PseudoElementSelector(`::${value}`);
+    return new CssSelector().pseudoElement(value);
   },
   combine(selector1, combinator, selector2) {
-    return selector1.combine(selector2, combinator);
+    return new CssSelector().combine(selector1, combinator, selector2);
   },
 };
 

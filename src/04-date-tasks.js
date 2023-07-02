@@ -106,16 +106,16 @@ function angleBetweenClockHands(date) {
   const hours = time.getUTCHours() % 12;
   const minutes = time.getUTCMinutes();
 
-  const hourHandAngle = (hours * 30 + minutes * 0.5) * (Math.PI / 180);
-  const minuteHandAngle = (minutes * 6) * (Math.PI / 180);
+  const hourHandAngle = hours * 30 + minutes * 0.5;
+  const minuteHandAngle = minutes * 6;
 
-  let angle = hourHandAngle - minuteHandAngle;
+  let angle = (hourHandAngle - minuteHandAngle) * (Math.PI / 180);
 
   // Adjust the angle to be within the range [-π, π]
   if (angle > Math.PI) {
     angle -= 2 * Math.PI;
   } else if (angle < -Math.PI) {
-    angle += 2 * Math.PI;
+    angle += 360;
   }
 
   return Math.abs(angle);
